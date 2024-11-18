@@ -1,0 +1,2 @@
+# asmtechclass
+mytechclass
