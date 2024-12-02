@@ -1,5 +1,6 @@
 import requests
 
+
 class CurrencyConverter:
     """
     A class to convert currency using exchange rates from an API.
@@ -22,8 +23,14 @@ class CurrencyConverter:
                 self.rates = data["rates"]
             else:
                 raise ValueError("Invalid API response: 'rates' not found.")
+        except requests.exceptions.RequestException as e:
+            print("⚠️ Network error: Unable to fetch data. Please check your internet connection.")
+            raise
+        except ValueError as e:
+            print(f"⚠️ Data error: {e}")
+            raise
         except Exception as e:
-            print(f"Error fetching data from API: {e}")
+            print(f"⚠️ Unexpected error occurred: {e}")
             raise
 
     def convert(self, from_currency, to_currency, amount):
@@ -38,8 +45,12 @@ class CurrencyConverter:
         Returns:
         float: The converted amount.
         """
-        if from_currency not in self.rates or to_currency not in self.rates:
-            raise ValueError("Invalid currency code provided.")
+        if from_currency not in self.rates:
+            raise ValueError(f"Currency '{from_currency}' is not supported.")
+        if to_currency not in self.rates:
+            raise ValueError(f"Currency '{to_currency}' is not supported.")
+        if amount < 0:
+            raise ValueError("Amount must be a positive number.")
 
         # Convert from the base currency (EUR) if necessary
         if from_currency != "EUR":
@@ -50,31 +61,54 @@ class CurrencyConverter:
         return converted_amount
 
 
-if __name__ == "__main__":
-    # Replace YOUR_ACCESS_KEY with your Fixer.io access key
+def main():
+    """
+    Main function to handle user interaction and conversions.
+    """
     YOUR_ACCESS_KEY = "005b2513d72ebe28d6569f0b2707b45b"
     url = f"http://data.fixer.io/api/latest?access_key={YOUR_ACCESS_KEY}"
 
-    try:
-        converter = CurrencyConverter(url)
+    print("\nWelcome to Value_Convert!")
+    print("This tool converts amounts from one currency to another.")
 
-        print("Welcome to Value_Convert!")
-        print("This tool converts Euros (EUR) into other currencies.")
+    while True:
+        try:
+            # Initialize the converter
+            converter = CurrencyConverter(url)
 
-        amount_in_euros = float(input("Enter the amount in Euros (EUR): "))
+            # Get the amount to convert
+            while True:
+                try:
+                    amount = float(input("\nEnter the amount to convert: "))
+                    if amount < 0:
+                        print("⚠️ Amount must be positive. Please try again.")
+                    else:
+                        break
+                except ValueError:
+                    print("⚠️ Please enter a valid number.")
 
-        # Define the target currencies
-        target_currencies = ["USD", "GBP", "JPY", "AUD", "CAD"]
+            # Get the source currency
+            from_currency = input("Enter the currency code you are converting from (e.g., EUR): ").upper()
+            # Get the target currency
+            to_currency = input("Enter the currency code you are converting to (e.g., USD): ").upper()
 
-        print(f"\nConverting {amount_in_euros} EUR into:")
-        for currency in target_currencies:
+            # Perform the conversion
             try:
-                converted_amount = converter.convert("EUR", currency, amount_in_euros)
-                print(f"  {currency}: {converted_amount}")
+                converted_amount = converter.convert(from_currency, to_currency, amount)
+                print(f"\n✅ {amount} {from_currency} is approximately {converted_amount} {to_currency}.")
             except ValueError as ve:
-                print(f"  {currency}: Conversion error ({ve})")
+                print(f"⚠️ Conversion error: {ve}")
 
-    except Exception as e:
-        print(f"An error occurred: {e}")
+            # Ask if the user wants to perform another conversion
+            another = input("\nWould you like to make another conversion? (yes/no): ").strip().lower()
+            if another != 'yes':
+                print("Thank you for using Value_Convert! Goodbye!")
+                break
 
-    print("\nThank you for using Value_Convert!")
+        except Exception as e:
+            print(f"⚠️ An unexpected error occurred: {e}")
+            break
+
+
+if __name__ == "__main__":
+    main()
